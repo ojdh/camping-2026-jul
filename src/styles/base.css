@@ -1,0 +1,26 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+img {
+  max-width: 100%;
+}
+
+/* Small utility set standing in for the handful of Tailwind classes the
+   checklist component uses, so this project doesn't need Tailwind at all. */
+.hidden {
+  display: none;
+}
+.mt-8 {
+  margin-top: 2rem;
+}
+.space-y-6 > * + * {
+  margin-top: 1.5rem;
+}
+.space-y-8 > * + * {
+  margin-top: 2rem;
+}

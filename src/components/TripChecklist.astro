@@ -1,0 +1,1868 @@
+---
+---
+
+<div id="gate" class="camp-gate">
+  <p class="camp-gate__label">🔑 Enter the trip passcode to view and edit the checklist</p>
+  <form id="gate-form" class="camp-gate__form">
+    <input
+      type="password"
+      id="gate-passcode"
+      placeholder="Trip passcode"
+      autocomplete="off"
+      class="camp-input"
+    />
+    <button type="submit" class="camp-btn camp-btn--mustard">Enter</button>
+  </form>
+  <p id="gate-error" class="camp-gate__error hidden"></p>
+</div>
+
+<div id="name-step" class="camp-gate hidden">
+  <p class="camp-gate__label">👋 What should we call you?</p>
+  <div id="name-roster" class="camp-roster"></div>
+  <input id="name-other-input" placeholder="Type your name" class="camp-input hidden camp-other-input" />
+  <p class="camp-gate__label camp-avatar-label">Pick an avatar</p>
+  <div id="avatar-picker" class="camp-avatar-picker"></div>
+  <button id="name-step-continue" type="button" class="camp-btn camp-btn--mustard camp-continue-btn" disabled>
+    Let's go →
+  </button>
+</div>
+
+<div id="app" class="hidden">
+  <div class="camp-toolbar">
+    <div class="camp-tabs">
+      <button data-view="checklist" class="camp-tab" data-active="true">📋 Checklist</button>
+      <button data-view="summary" class="camp-tab" data-active="false">🎒 Who's Bringing What</button>
+      <button data-view="swipe" class="camp-tab" data-active="false">🃏 Swipe</button>
+    </div>
+    <div class="camp-identity">
+      <span id="identity-display"></span>
+      <button id="identity-change" type="button" class="camp-identity__change">change</button>
+    </div>
+  </div>
+
+  <div id="view-checklist" class="mt-8 space-y-8">
+    <input
+      id="search-input"
+      type="search"
+      placeholder="🔍 Search items…"
+      class="camp-input camp-search"
+      autocomplete="off"
+    />
+    <nav id="filter-bar" class="camp-quicknav" aria-label="Filter by section"></nav>
+    <div id="bulk-bar" class="camp-bulk-bar hidden">
+      <span id="bulk-count"></span>
+      <input id="bulk-note" placeholder="note for all (optional)" class="camp-input camp-input--sm" />
+      <button id="bulk-claim-btn" type="button" class="camp-btn camp-btn--mustard camp-btn--sm">
+        🙋 I'll bring these
+      </button>
+      <button id="bulk-clear-btn" type="button" class="camp-btn camp-btn--sm">Clear</button>
+    </div>
+    <div id="groups"></div>
+  </div>
+
+  <div id="view-summary" class="mt-8 hidden space-y-6"></div>
+
+  <div id="view-swipe" class="mt-8 hidden space-y-6">
+    <div class="camp-swipe-toolbar">
+      <span id="swipe-progress" class="camp-swipe-progress"></span>
+      <button id="swipe-add-btn" type="button" class="camp-btn camp-btn--sm">✨ Add something new</button>
+    </div>
+    <form id="swipe-add-form" class="camp-swipe-add-form hidden">
+      <input id="swipe-add-input" placeholder="What did we forget?" class="camp-input camp-input--sm" />
+      <button type="submit" class="camp-btn camp-btn--mustard camp-btn--sm">Add it</button>
+    </form>
+    <div id="swipe-stack" class="camp-swipe-stack"></div>
+    <div id="swipe-actions" class="camp-swipe-actions">
+      <button id="swipe-nope-btn" type="button" class="camp-swipe-action camp-swipe-action--nope">
+        👎 Nope
+      </button>
+      <button id="swipe-yes-btn" type="button" class="camp-swipe-action camp-swipe-action--yes">
+        🙋 I'll bring this!
+      </button>
+    </div>
+    <div id="swipe-end" class="camp-swipe-end hidden">
+      <p class="camp-swipe-end__title">🎉 That's the whole deck!</p>
+      <p class="camp-swipe-end__subtitle">Want to play again?</p>
+      <button id="swipe-restart-btn" type="button" class="camp-btn camp-btn--mustard">
+        🔄 Shuffle &amp; restart
+      </button>
+    </div>
+  </div>
+</div>
+
+<style is:global>
+  .camp-gate {
+    max-width: 30rem;
+    margin: 0 auto;
+    padding: 2rem;
+    text-align: center;
+    background: var(--camp-card);
+    border: 3px solid var(--camp-forest);
+    border-radius: 1.25rem;
+    box-shadow: 5px 5px 0 var(--camp-forest);
+  }
+  .camp-gate__label {
+    font-family: var(--font-display);
+    font-weight: 600;
+    color: var(--camp-forest);
+  }
+  .camp-gate__form {
+    margin-top: 1rem;
+    display: flex;
+    gap: 0.5rem;
+  }
+  .camp-gate__error {
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--camp-rust-deep);
+  }
+  .camp-other-input {
+    margin-top: 0.75rem;
+  }
+  .camp-avatar-label {
+    margin-top: 1.5rem;
+  }
+  .camp-continue-btn {
+    margin-top: 1.25rem;
+  }
+  .camp-continue-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none !important;
+  }
+
+  .camp-roster {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+  .camp-roster button {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 0.85rem;
+    border: 2px solid var(--camp-forest);
+    border-radius: 9999px;
+    padding: 0.4rem 0.9rem;
+    color: var(--camp-forest);
+    background: var(--camp-card);
+    transition: transform 120ms ease;
+  }
+  .camp-roster button:hover {
+    transform: translateY(-2px);
+  }
+  .camp-roster button[data-selected='true'] {
+    background: var(--camp-forest);
+    color: var(--camp-cream);
+  }
+
+  .camp-avatar-picker {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+  }
+  .camp-avatar-picker button {
+    width: 3.25rem;
+    height: 4.5rem;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 0.6rem;
+    border: 2px solid var(--camp-forest);
+    background: var(--camp-card);
+    transition: transform 120ms ease;
+  }
+  .camp-avatar-picker button:hover {
+    transform: translateY(-2px);
+  }
+  .camp-avatar-picker button[data-selected='true'] {
+    background: var(--camp-mustard);
+    box-shadow: 3px 3px 0 var(--camp-forest);
+  }
+  .camp-avatar-img {
+    width: 100%;
+    height: auto;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+  .camp-avatar-icon {
+    height: 1.4em;
+    width: auto;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    vertical-align: middle;
+  }
+  .camp-chip-avatar {
+    height: 1.3em;
+    width: auto;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    vertical-align: middle;
+  }
+
+  .camp-input {
+    flex: 1;
+    border-radius: 0.75rem;
+    border: 2px solid var(--camp-forest);
+    background: var(--camp-card);
+    color: var(--camp-ink);
+    padding: 0.6rem 0.9rem;
+  }
+  .camp-input:focus {
+    outline: none;
+    border-color: var(--camp-mustard-deep);
+  }
+  .camp-input--sm {
+    padding: 0.4rem 0.7rem;
+    font-size: 0.875rem;
+    flex: initial;
+  }
+
+  .camp-btn {
+    font-family: var(--font-display);
+    font-weight: 600;
+    white-space: nowrap;
+    border-radius: 9999px;
+    border: 2.5px solid var(--camp-forest);
+    padding: 0.6rem 1.4rem;
+    transition: transform 120ms ease, box-shadow 120ms ease;
+  }
+  .camp-btn:hover {
+    transform: translate(-2px, -2px);
+  }
+  .camp-btn:active {
+    transform: translate(1px, 1px);
+    box-shadow: none !important;
+  }
+  .camp-btn--mustard {
+    background: var(--camp-mustard);
+    color: var(--camp-forest-deep);
+    box-shadow: 4px 4px 0 var(--camp-forest);
+  }
+  .camp-btn--mustard:hover {
+    box-shadow: 6px 6px 0 var(--camp-forest);
+  }
+  .camp-btn--sm {
+    padding: 0.45rem 0.9rem;
+    font-size: 0.8rem;
+    box-shadow: 3px 3px 0 var(--camp-forest);
+  }
+  .camp-btn--sm:hover {
+    box-shadow: 5px 5px 0 var(--camp-forest);
+  }
+
+  .camp-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+  .camp-tabs {
+    display: flex;
+    gap: 0.6rem;
+  }
+  .camp-tab {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 0.9rem;
+    border-radius: 9999px;
+    padding: 0.5rem 1.1rem;
+    border: 2.5px solid var(--camp-forest);
+    color: var(--camp-forest);
+    background: transparent;
+    transition: transform 120ms ease;
+  }
+  .camp-tab:hover {
+    transform: translateY(-2px);
+  }
+  .camp-tab[data-active='true'] {
+    background: var(--camp-forest);
+    color: var(--camp-cream);
+    box-shadow: 3px 3px 0 var(--camp-rust);
+  }
+  .camp-identity {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--camp-forest-deep);
+  }
+  .camp-identity__change {
+    font-size: 0.72rem;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    color: var(--camp-forest-deep);
+    opacity: 0.65;
+  }
+  .camp-identity__change:hover {
+    opacity: 1;
+  }
+
+  .camp-search {
+    display: block;
+    width: 100%;
+    margin-bottom: 0.75rem;
+  }
+  .camp-search-empty {
+    margin-top: 1.5rem;
+    color: var(--camp-forest-deep);
+    opacity: 0.7;
+  }
+
+  .camp-quicknav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .camp-filter {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--camp-forest);
+    background: var(--camp-card);
+    border: 2px solid var(--camp-forest);
+    border-radius: 9999px;
+    padding: 0.3rem 0.8rem;
+    transition: transform 120ms ease;
+  }
+  .camp-filter:hover {
+    transform: translateY(-2px);
+  }
+  .camp-filter--active {
+    background: var(--camp-forest);
+    color: var(--camp-cream);
+  }
+
+  .camp-bulk-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+    background: var(--camp-mustard);
+    border: 2.5px solid var(--camp-forest);
+    border-radius: 9999px;
+    padding: 0.5rem 1rem;
+  }
+  .camp-bulk-bar.hidden {
+    display: none;
+  }
+  .camp-bulk-bar input {
+    width: 12rem;
+  }
+  #bulk-count {
+    font-family: var(--font-display);
+    font-weight: 600;
+    color: var(--camp-forest-deep);
+  }
+
+  .camp-group {
+    margin-top: 2rem;
+    scroll-margin-top: 1.5rem;
+  }
+  .camp-group__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 1.35rem;
+    color: var(--camp-cream);
+    background: var(--camp-forest);
+    border-radius: 9999px;
+    padding: 0.5rem 1.25rem;
+    transform: rotate(-0.6deg);
+    cursor: pointer;
+    user-select: none;
+  }
+  .camp-group__badge::marker,
+  .camp-group__badge::-webkit-details-marker {
+    content: '';
+    display: none;
+  }
+  .camp-group__icon {
+    font-size: 1.15rem;
+  }
+  .camp-chevron {
+    display: inline-block;
+    transition: transform 150ms ease;
+  }
+  details[open] > .camp-group__badge .camp-chevron {
+    transform: rotate(90deg);
+  }
+  .camp-category {
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--camp-mustard-deep);
+    border-bottom: 2px dashed var(--camp-mustard);
+    display: inline-block;
+    padding-bottom: 0.15rem;
+  }
+  .camp-trail {
+    margin-top: 1.5rem;
+    border: none;
+    border-top: 3px dashed var(--camp-forest);
+    opacity: 0.3;
+  }
+
+  .camp-item {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    background: var(--camp-card);
+    border: 2px dashed var(--camp-forest);
+    border-radius: 0.85rem;
+    padding: 0.65rem 0.9rem;
+    margin-top: 0.6rem;
+    transition: box-shadow 120ms ease, transform 120ms ease;
+  }
+  .camp-item:hover {
+    box-shadow: 3px 3px 0 var(--camp-mustard);
+    transform: translateY(-1px);
+  }
+  .camp-item--add {
+    border-style: dotted;
+    opacity: 0.85;
+  }
+  .camp-item__left {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .camp-item__checkbox {
+    width: 1.1rem;
+    height: 1.1rem;
+    accent-color: var(--camp-forest);
+  }
+  .camp-item__name {
+    color: var(--camp-ink);
+    font-weight: 500;
+  }
+  .camp-item__edit,
+  .camp-item__remove {
+    font-size: 0.72rem;
+    color: var(--camp-forest-deep);
+    opacity: 0.35;
+    border-radius: 9999px;
+    padding: 0.1rem 0.4rem;
+  }
+  .camp-item__edit:hover {
+    opacity: 1;
+  }
+  .camp-item__remove:hover {
+    opacity: 1;
+    color: var(--camp-rust-deep);
+    background: color-mix(in srgb, var(--camp-rust) 15%, transparent);
+  }
+
+  .camp-add-inline {
+    display: flex;
+    gap: 0.4rem;
+    width: 100%;
+  }
+  .camp-add-inline input {
+    flex: 1;
+  }
+
+  .camp-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    border-radius: 9999px;
+    background: var(--camp-rust);
+    color: var(--camp-cream);
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.2rem 0.65rem;
+    transform: rotate(var(--chip-rotate, -2deg));
+  }
+  .camp-chip button {
+    font-weight: 700;
+    line-height: 1;
+  }
+  .camp-chip--new {
+    animation: camp-chip-pop 420ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes camp-chip-pop {
+    0% {
+      transform: scale(0) rotate(0deg);
+      opacity: 0;
+    }
+    60% {
+      transform: scale(1.2) rotate(-6deg);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(1) rotate(var(--chip-rotate, -2deg));
+      opacity: 1;
+    }
+  }
+  .camp-removing {
+    animation: camp-rain-out 380ms ease-in forwards;
+    pointer-events: none;
+  }
+  @keyframes camp-rain-out {
+    0% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    40% {
+      opacity: 1;
+      transform: scale(1.05);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(0.85) translateY(8px);
+    }
+  }
+
+  .camp-claim-form {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .camp-claim-form input {
+    width: 7.5rem;
+  }
+
+  .camp-summary-person {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 1.2rem;
+    color: var(--camp-forest);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .camp-summary-list {
+    margin-top: 0.5rem;
+    padding-left: 0;
+  }
+  .camp-summary-list li {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.3rem 0;
+    padding-left: 1.4rem;
+    position: relative;
+    color: var(--camp-ink);
+  }
+  .camp-summary-list li::before {
+    content: '🥾';
+    position: absolute;
+    left: 0;
+    font-size: 0.8rem;
+  }
+  .camp-summary-item__remove {
+    font-size: 0.7rem;
+    color: var(--camp-forest-deep);
+    opacity: 0.4;
+    border-radius: 9999px;
+    padding: 0.05rem 0.4rem;
+  }
+  .camp-summary-item__remove:hover {
+    opacity: 1;
+    color: var(--camp-rust-deep);
+    background: color-mix(in srgb, var(--camp-rust) 15%, transparent);
+  }
+
+  .camp-swipe-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+  .camp-swipe-progress {
+    font-family: var(--font-display);
+    font-weight: 600;
+    color: var(--camp-forest-deep);
+    opacity: 0.75;
+  }
+  .camp-swipe-add-form {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .camp-swipe-add-form.hidden {
+    display: none;
+  }
+  .camp-swipe-add-form input {
+    width: 14rem;
+    max-width: 60vw;
+  }
+
+  .camp-swipe-stack {
+    position: relative;
+    height: 22rem;
+    max-width: 24rem;
+    margin: 0 auto;
+    touch-action: pan-y;
+  }
+  .camp-swipe-card {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--camp-card);
+    border: 3px solid var(--camp-forest);
+    border-radius: 1.25rem;
+    box-shadow: 6px 6px 0 var(--camp-forest);
+    padding: 1.5rem 1.25rem;
+    cursor: grab;
+    user-select: none;
+    will-change: transform;
+  }
+  .camp-swipe-card:active {
+    cursor: grabbing;
+  }
+  .camp-swipe-card--peek {
+    transform: scale(0.94) translateY(0.6rem);
+    box-shadow: 4px 4px 0 var(--camp-forest);
+    opacity: 0.7;
+    pointer-events: none;
+  }
+  .camp-swipe-card__art {
+    width: 6.5rem;
+    height: 6.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--camp-cream);
+    border: 2px dashed var(--camp-forest);
+    border-radius: 1rem;
+    margin-top: 0.5rem;
+  }
+  .camp-swipe-card__icon {
+    width: 5rem;
+    height: 5rem;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+  .camp-swipe-card__group {
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--camp-mustard-deep);
+    text-align: center;
+  }
+  .camp-swipe-card__name {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.5rem;
+    color: var(--camp-forest);
+    text-align: center;
+    transform: rotate(-0.5deg);
+  }
+  .camp-swipe-card__claimants {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.4rem;
+    min-height: 1.6rem;
+  }
+  .camp-swipe-card__claimants-label {
+    font-size: 0.75rem;
+    color: var(--camp-forest-deep);
+    opacity: 0.6;
+    text-align: center;
+  }
+  .camp-swipe-card__stamp {
+    position: absolute;
+    top: 1.5rem;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.3rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 0.5rem;
+    border: 3px solid currentColor;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .camp-swipe-card__stamp--yes {
+    left: 1.25rem;
+    color: var(--camp-forest);
+    transform: rotate(-18deg);
+  }
+  .camp-swipe-card__stamp--nope {
+    right: 1.25rem;
+    color: var(--camp-rust-deep);
+    transform: rotate(18deg);
+  }
+
+  .camp-swipe-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+  }
+  .camp-swipe-actions.hidden {
+    display: none;
+  }
+  .camp-swipe-action {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 1rem;
+    border-radius: 9999px;
+    padding: 0.75rem 1.5rem;
+    border: 2.5px solid var(--camp-forest);
+    background: var(--camp-card);
+    transition: transform 120ms ease, box-shadow 120ms ease;
+  }
+  .camp-swipe-action:hover {
+    transform: translateY(-2px);
+  }
+  .camp-swipe-action--nope {
+    color: var(--camp-rust-deep);
+    box-shadow: 3px 3px 0 var(--camp-rust);
+  }
+  .camp-swipe-action--yes {
+    color: var(--camp-forest-deep);
+    background: var(--camp-mustard);
+    box-shadow: 3px 3px 0 var(--camp-forest);
+  }
+
+  .camp-swipe-end {
+    max-width: 24rem;
+    margin: 0 auto;
+    text-align: center;
+    background: var(--camp-card);
+    border: 3px dashed var(--camp-forest);
+    border-radius: 1.25rem;
+    padding: 2rem 1.5rem;
+  }
+  .camp-swipe-end.hidden {
+    display: none;
+  }
+  .camp-swipe-end__title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.4rem;
+    color: var(--camp-forest);
+  }
+  .camp-swipe-end__subtitle {
+    margin-top: 0.25rem;
+    margin-bottom: 1rem;
+    color: var(--camp-forest-deep);
+    opacity: 0.75;
+  }
+
+  .camp-swipe-toast {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background: var(--camp-mustard);
+    border: 3px solid var(--camp-forest);
+    border-radius: 1.25rem;
+    box-shadow: 6px 6px 0 var(--camp-forest);
+    z-index: 5;
+    animation: camp-chip-pop 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .camp-swipe-toast img {
+    width: 5rem;
+    height: 5rem;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+  .camp-swipe-toast p {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--camp-forest-deep);
+    text-align: center;
+    padding: 0 1rem;
+  }
+</style>
+
+<script>
+  import {
+    createTripClient,
+    getStoredPasscode,
+    storePasscode,
+    clearStoredPasscode,
+  } from '../lib/supabase';
+
+  // BASE_URL already ends in a trailing slash (e.g. "/camping-2026-jul/" for
+  // this project's GitHub Pages subpath, or "/" at the domain root), so
+  // asset paths below are built without a leading slash of their own.
+  const BASE_URL = import.meta.env.BASE_URL;
+
+  interface Item {
+    id: string;
+    group_name: string;
+    category: string;
+    name: string;
+    sort_order: number;
+  }
+  interface Assignment {
+    id: string;
+    item_id: string;
+    person_name: string;
+    avatar: string | null;
+    note: string | null;
+  }
+
+  const NAME_STORAGE_KEY = 'camping-2026-jul-name';
+  const AVATAR_STORAGE_KEY = 'camping-2026-jul-avatar';
+  const GROUP_ORDER = ['Camping Basics', 'Personal', 'Food', 'Cooking Gear', 'Misc.'];
+  const GROUP_ICONS: Record<string, string> = {
+    'Camping Basics': '⛺',
+    Personal: '🧴',
+    Food: '🌮',
+    'Cooking Gear': '🔥',
+    'Misc.': '🎒',
+  };
+  const CATEGORY_ICONS: Record<string, string> = {
+    'Recreation / Fun': '🎲',
+  };
+  const NAME_ROSTER = [
+    'Oj',
+    'Sam',
+    'Osric',
+    'Eliza',
+    'Bristi',
+    'Doyle',
+    'Marco',
+    'Swapnil',
+    'Riza',
+    'Prayas',
+    'Rubi',
+    'Sujen',
+    'River',
+  ];
+  // Original pixel-art characters (not from the terriblejared tileset — see
+  // public/pixel-camp/ for the licensed campground tiles used elsewhere on
+  // this page). Assignments made before these shipped may still have an
+  // emoji string in `avatar`; appendAvatar() below handles both.
+  const AVATAR_OPTIONS = [
+    `${BASE_URL}pixel-camp/avatars/m1.png`,
+    `${BASE_URL}pixel-camp/avatars/f1.png`,
+    `${BASE_URL}pixel-camp/avatars/m2.png`,
+    `${BASE_URL}pixel-camp/avatars/f2.png`,
+    `${BASE_URL}pixel-camp/avatars/m3.png`,
+    `${BASE_URL}pixel-camp/avatars/f3.png`,
+    `${BASE_URL}pixel-camp/avatars/m4.png`,
+    `${BASE_URL}pixel-camp/avatars/f4.png`,
+    `${BASE_URL}pixel-camp/avatars/m5.png`,
+    `${BASE_URL}pixel-camp/avatars/f5.png`,
+  ];
+  const FALLBACK_AVATAR_ICONS = ['🎒', '🥾', '🧭', '🔥', '🌲', '⭐'];
+
+  // Pixel-art matching for Swipe mode: keyword -> icon key, checked in order
+  // (most specific first) against the item's name, then category, then
+  // group_name. Flavor, not precision — falls back to a generic icon.
+  const ITEM_ICON_PATHS: Record<string, string> = {
+    tent: `${BASE_URL}pixel-camp/items/tent.png`,
+    'sleeping-bag': `${BASE_URL}pixel-camp/items/sleeping-bag.png`,
+    backpack: `${BASE_URL}pixel-camp/items/backpack.png`,
+    lantern: `${BASE_URL}pixel-camp/items/lantern.png`,
+    cooler: `${BASE_URL}pixel-camp/items/cooler.png`,
+    chair: `${BASE_URL}pixel-camp/items/chair.png`,
+    pot: `${BASE_URL}pixel-camp/items/pot.png`,
+    cutlery: `${BASE_URL}pixel-camp/items/cutlery.png`,
+    plate: `${BASE_URL}pixel-camp/items/plate.png`,
+    drink: `${BASE_URL}pixel-camp/items/drink.png`,
+    hatchet: `${BASE_URL}pixel-camp/items/hatchet.png`,
+    toiletries: `${BASE_URL}pixel-camp/items/toiletries.png`,
+    rain: `${BASE_URL}pixel-camp/items/rain.png`,
+    cards: `${BASE_URL}pixel-camp/items/cards.png`,
+    speaker: `${BASE_URL}pixel-camp/items/speaker.png`,
+    boots: `${BASE_URL}pixel-camp/items/boots.png`,
+    logs: `${BASE_URL}pixel-camp/items/logs.png`,
+    campfire: `${BASE_URL}pixel-camp/campfire.png`,
+    generic: `${BASE_URL}pixel-camp/items/generic.png`,
+    dog: `${BASE_URL}pixel-camp/items/dog.png`,
+  };
+  const ITEM_ICON_KEYWORDS: [string, string][] = [
+    ['firewood', 'logs'],
+    ['kindling', 'logs'],
+    ['campfire', 'campfire'],
+    ['fire', 'campfire'],
+    ['tent', 'tent'],
+    ['sleeping', 'sleeping-bag'],
+    ['pad', 'sleeping-bag'],
+    ['backpack', 'backpack'],
+    ['daypack', 'backpack'],
+    ['pack', 'backpack'],
+    ['headlamp', 'lantern'],
+    ['flashlight', 'lantern'],
+    ['lantern', 'lantern'],
+    ['light', 'lantern'],
+    ['cooler', 'cooler'],
+    ['ice', 'cooler'],
+    ['chair', 'chair'],
+    ['stool', 'chair'],
+    ['stove', 'pot'],
+    ['skillet', 'pot'],
+    ['pan', 'pot'],
+    ['pot', 'pot'],
+    ['fork', 'cutlery'],
+    ['spoon', 'cutlery'],
+    ['knife', 'cutlery'],
+    ['cutlery', 'cutlery'],
+    ['utensil', 'cutlery'],
+    ['plate', 'plate'],
+    ['bowl', 'plate'],
+    ['cup', 'drink'],
+    ['mug', 'drink'],
+    ['drink', 'drink'],
+    ['beer', 'drink'],
+    ['wine', 'drink'],
+    ['water', 'drink'],
+    ['coffee', 'drink'],
+    ['soda', 'drink'],
+    ['juice', 'drink'],
+    ['hatchet', 'hatchet'],
+    ['axe', 'hatchet'],
+    ['saw', 'hatchet'],
+    ['tool', 'hatchet'],
+    ['spray', 'toiletries'],
+    ['bug', 'toiletries'],
+    ['sunscreen', 'toiletries'],
+    ['soap', 'toiletries'],
+    ['toothbrush', 'toiletries'],
+    ['toothpaste', 'toiletries'],
+    ['towel', 'toiletries'],
+    ['deodorant', 'toiletries'],
+    ['poncho', 'rain'],
+    ['umbrella', 'rain'],
+    ['tarp', 'rain'],
+    ['rain', 'rain'],
+    ['card', 'cards'],
+    ['game', 'cards'],
+    ['frisbee', 'cards'],
+    ['ball', 'cards'],
+    ['speaker', 'speaker'],
+    ['music', 'speaker'],
+    ['battery', 'speaker'],
+    ['batteries', 'speaker'],
+    ['charger', 'speaker'],
+    ['boot', 'boots'],
+    ['shoe', 'boots'],
+    ['hiking', 'boots'],
+    ['sock', 'boots'],
+    ['protein', 'plate'],
+    ['mains', 'plate'],
+    ['meat', 'plate'],
+    ['egg', 'plate'],
+    ['snack', 'plate'],
+    ['produce', 'plate'],
+    ['veg', 'plate'],
+    ['fruit', 'plate'],
+    ['food', 'plate'],
+  ];
+
+  function pickItemIconPath(item: Item): string {
+    const haystacks = [item.name, item.category, item.group_name].map((s) => s.toLowerCase());
+    for (const [keyword, key] of ITEM_ICON_KEYWORDS) {
+      if (haystacks.some((h) => h.includes(keyword))) return ITEM_ICON_PATHS[key];
+    }
+    return ITEM_ICON_PATHS.generic;
+  }
+
+  let client: ReturnType<typeof createTripClient> | null = null;
+  let items: Item[] = [];
+  let assignments: Assignment[] = [];
+  let previousAssignmentIds = new Set<string>();
+  const collapsedGroups = new Set<string>();
+  const selectedItemIds = new Set<string>();
+  let activeFilter: string | null = null;
+  let searchQuery = '';
+  let activeView: 'checklist' | 'summary' | 'swipe' = 'checklist';
+
+  // --- Swipe mode state ---
+  let swipeDeck: Item[] = [];
+  let swipeIndex = 0;
+  let swipeInitialized = false;
+  let swipeBusy = false;
+
+  let myName = localStorage.getItem(NAME_STORAGE_KEY) ?? '';
+  let myAvatar = localStorage.getItem(AVATAR_STORAGE_KEY) ?? '';
+  let selectedRosterName: string | null = null;
+  let selectedAvatar: string | null = null;
+
+  function slugify(s: string) {
+    return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  }
+
+  function triggerRainRemoval(el: HTMLElement, assignmentId: string) {
+    el.classList.add('camp-removing');
+    el.insertAdjacentHTML('beforeend', ' <span>🌧️</span>');
+    setTimeout(() => unclaim(assignmentId), 380);
+  }
+
+  const gate = document.getElementById('gate')!;
+  const gateForm = document.getElementById('gate-form') as HTMLFormElement;
+  const gatePasscodeInput = document.getElementById('gate-passcode') as HTMLInputElement;
+  const gateError = document.getElementById('gate-error')!;
+  const nameStep = document.getElementById('name-step')!;
+  const rosterEl = document.getElementById('name-roster')!;
+  const otherInput = document.getElementById('name-other-input') as HTMLInputElement;
+  const avatarPickerEl = document.getElementById('avatar-picker')!;
+  const nameStepContinue = document.getElementById('name-step-continue') as HTMLButtonElement;
+  const app = document.getElementById('app')!;
+  const identityDisplay = document.getElementById('identity-display')!;
+  const identityChangeBtn = document.getElementById('identity-change') as HTMLButtonElement;
+  const searchInputEl = document.getElementById('search-input') as HTMLInputElement;
+  const filterBarEl = document.getElementById('filter-bar')!;
+  const bulkBar = document.getElementById('bulk-bar')!;
+  const bulkCount = document.getElementById('bulk-count')!;
+  const bulkNoteInput = document.getElementById('bulk-note') as HTMLInputElement;
+  const bulkClaimBtn = document.getElementById('bulk-claim-btn') as HTMLButtonElement;
+  const bulkClearBtn = document.getElementById('bulk-clear-btn') as HTMLButtonElement;
+  const groupsEl = document.getElementById('groups')!;
+  const viewChecklist = document.getElementById('view-checklist')!;
+  const viewSummary = document.getElementById('view-summary')!;
+  const viewSwipe = document.getElementById('view-swipe')!;
+  const swipeProgress = document.getElementById('swipe-progress')!;
+  const swipeAddBtn = document.getElementById('swipe-add-btn') as HTMLButtonElement;
+  const swipeAddForm = document.getElementById('swipe-add-form') as HTMLFormElement;
+  const swipeAddInput = document.getElementById('swipe-add-input') as HTMLInputElement;
+  const swipeStack = document.getElementById('swipe-stack')!;
+  const swipeActions = document.getElementById('swipe-actions')!;
+  const swipeNopeBtn = document.getElementById('swipe-nope-btn') as HTMLButtonElement;
+  const swipeYesBtn = document.getElementById('swipe-yes-btn') as HTMLButtonElement;
+  const swipeEnd = document.getElementById('swipe-end')!;
+  const swipeRestartBtn = document.getElementById('swipe-restart-btn') as HTMLButtonElement;
+
+  // --- Name / avatar onboarding ---
+
+  function currentSelectedName(): string {
+    return selectedRosterName === 'OTHER' ? otherInput.value.trim() : selectedRosterName ?? '';
+  }
+
+  function updateContinueState() {
+    nameStepContinue.disabled = !currentSelectedName() || !selectedAvatar;
+  }
+
+  function refreshRosterHighlight() {
+    rosterEl.querySelectorAll('button').forEach((btn) => {
+      const isOther = btn.textContent === 'Other';
+      btn.dataset.selected = String(
+        (isOther && selectedRosterName === 'OTHER') || (!isOther && btn.textContent === selectedRosterName)
+      );
+    });
+  }
+
+  function refreshAvatarHighlight() {
+    avatarPickerEl.querySelectorAll('button').forEach((btn) => {
+      btn.dataset.selected = String(btn.dataset.avatarSrc === selectedAvatar);
+    });
+  }
+
+  function buildNameStep() {
+    for (const name of NAME_ROSTER) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = name;
+      btn.addEventListener('click', () => {
+        selectedRosterName = name;
+        otherInput.classList.add('hidden');
+        otherInput.value = '';
+        refreshRosterHighlight();
+        updateContinueState();
+      });
+      rosterEl.appendChild(btn);
+    }
+    const otherBtn = document.createElement('button');
+    otherBtn.type = 'button';
+    otherBtn.textContent = 'Other';
+    otherBtn.addEventListener('click', () => {
+      selectedRosterName = 'OTHER';
+      otherInput.classList.remove('hidden');
+      otherInput.focus();
+      refreshRosterHighlight();
+      updateContinueState();
+    });
+    rosterEl.appendChild(otherBtn);
+
+    for (const avatar of AVATAR_OPTIONS) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.dataset.avatarSrc = avatar;
+      const img = document.createElement('img');
+      img.src = avatar;
+      img.alt = '';
+      img.className = 'camp-avatar-img';
+      btn.appendChild(img);
+      btn.addEventListener('click', () => {
+        selectedAvatar = avatar;
+        refreshAvatarHighlight();
+        updateContinueState();
+      });
+      avatarPickerEl.appendChild(btn);
+    }
+
+    otherInput.addEventListener('input', updateContinueState);
+  }
+
+  function openNameStep() {
+    selectedRosterName = NAME_ROSTER.includes(myName) ? myName : myName ? 'OTHER' : null;
+    selectedAvatar = myAvatar || null;
+    if (selectedRosterName === 'OTHER') {
+      otherInput.value = myName;
+      otherInput.classList.remove('hidden');
+    } else {
+      otherInput.value = '';
+      otherInput.classList.add('hidden');
+    }
+    refreshRosterHighlight();
+    refreshAvatarHighlight();
+    updateContinueState();
+    gate.classList.add('hidden');
+    app.classList.add('hidden');
+    nameStep.classList.remove('hidden');
+  }
+
+  nameStepContinue.addEventListener('click', () => {
+    const name = currentSelectedName();
+    if (!name || !selectedAvatar) return;
+    myName = name;
+    myAvatar = selectedAvatar;
+    localStorage.setItem(NAME_STORAGE_KEY, myName);
+    localStorage.setItem(AVATAR_STORAGE_KEY, myAvatar);
+    nameStep.classList.add('hidden');
+    showApp();
+    render();
+  });
+
+  identityChangeBtn.addEventListener('click', () => openNameStep());
+
+  buildNameStep();
+
+  // --- Passcode gate ---
+
+  async function tryEnter(passcode: string) {
+    try {
+      const candidate = createTripClient(passcode);
+      const { data, error } = await candidate.from('items').select('*').order('sort_order');
+      // RLS silently returns zero rows (not an error) for a wrong passcode,
+      // so an empty result is our signal to reject rather than a real error.
+      if (error || !data || data.length === 0) {
+        return false;
+      }
+      client = candidate;
+      items = data as Item[];
+      storePasscode(passcode);
+      await refreshAssignments();
+      gate.classList.add('hidden');
+      if (myName && myAvatar) {
+        showApp();
+      } else {
+        openNameStep();
+      }
+    } catch {
+      return false;
+    }
+    return true;
+  }
+
+  async function refreshAssignments() {
+    if (!client) return;
+    const { data } = await client.from('assignments').select('*');
+    assignments = (data as Assignment[]) ?? [];
+    render();
+    previousAssignmentIds = new Set(assignments.map((a) => a.id));
+  }
+
+  function showApp() {
+    identityDisplay.innerHTML = '';
+    if (myAvatar) {
+      appendAvatar(identityDisplay, myAvatar, 'camp-avatar-icon');
+    }
+    identityDisplay.appendChild(document.createTextNode(myName));
+    gate.classList.add('hidden');
+    nameStep.classList.add('hidden');
+    app.classList.remove('hidden');
+  }
+
+  gateForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const ok = await tryEnter(gatePasscodeInput.value);
+    if (!ok) {
+      gateError.textContent = '🚫 Wrong passcode — try again.';
+      gateError.classList.remove('hidden');
+    }
+  });
+
+  document.querySelectorAll<HTMLButtonElement>('.camp-tab').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll<HTMLButtonElement>('.camp-tab').forEach((b) => (b.dataset.active = 'false'));
+      btn.dataset.active = 'true';
+      const view = (btn.dataset.view ?? 'checklist') as 'checklist' | 'summary' | 'swipe';
+      activeView = view;
+      viewChecklist.classList.toggle('hidden', view !== 'checklist');
+      viewSummary.classList.toggle('hidden', view !== 'summary');
+      viewSwipe.classList.toggle('hidden', view !== 'swipe');
+      if (view === 'swipe') {
+        if (!swipeInitialized) startSwipeDeck();
+        else renderSwipeMode();
+      }
+    });
+  });
+
+  searchInputEl.addEventListener('input', () => {
+    searchQuery = searchInputEl.value;
+    renderChecklist();
+  });
+
+  // --- Claiming ---
+
+  async function claimItem(itemId: string, note: string) {
+    if (!myName || !client) return;
+    await client.from('assignments').insert({ item_id: itemId, person_name: myName, avatar: myAvatar, note: note || null });
+    await refreshAssignments();
+  }
+
+  async function unclaim(assignmentId: string) {
+    if (!client) return;
+    await client.from('assignments').delete().eq('id', assignmentId);
+    await refreshAssignments();
+  }
+
+  function updateBulkBar() {
+    const count = selectedItemIds.size;
+    bulkBar.classList.toggle('hidden', count === 0);
+    bulkCount.textContent = `${count} selected`;
+  }
+
+  bulkClaimBtn.addEventListener('click', async () => {
+    if (!client || !myName || selectedItemIds.size === 0) return;
+    const note = bulkNoteInput.value.trim();
+    const rows = Array.from(selectedItemIds).map((itemId) => ({
+      item_id: itemId,
+      person_name: myName,
+      avatar: myAvatar,
+      note: note || null,
+    }));
+    await client.from('assignments').insert(rows);
+    selectedItemIds.clear();
+    bulkNoteInput.value = '';
+    updateBulkBar();
+    await refreshAssignments();
+  });
+
+  bulkClearBtn.addEventListener('click', () => {
+    selectedItemIds.clear();
+    updateBulkBar();
+    render();
+  });
+
+  // --- Items: add / edit / remove ---
+
+  async function removeItem(item: Item) {
+    if (!client) return;
+    await client.from('items').delete().eq('id', item.id);
+    items = items.filter((i) => i.id !== item.id);
+    assignments = assignments.filter((a) => a.item_id !== item.id);
+    render();
+  }
+
+  function startEditingItem(item: Item, nameSpan: HTMLElement) {
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = item.name;
+    input.className = 'camp-input camp-input--sm';
+    let finished = false;
+    const finish = async (save: boolean) => {
+      if (finished) return;
+      finished = true;
+      const newName = input.value.trim();
+      input.replaceWith(nameSpan);
+      if (save && client && newName && newName !== item.name) {
+        await client.from('items').update({ name: newName }).eq('id', item.id);
+        item.name = newName;
+        nameSpan.textContent = newName;
+      }
+    };
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') finish(true);
+      if (e.key === 'Escape') finish(false);
+    });
+    input.addEventListener('blur', () => finish(true));
+    nameSpan.replaceWith(input);
+    input.focus();
+    input.select();
+  }
+
+  async function addItem(groupName: string, category: string, name: string) {
+    if (!client || !name) return;
+    const sortOrder = items.reduce((max, i) => Math.max(max, i.sort_order), 0) + 1;
+    const { data } = await client
+      .from('items')
+      .insert({ group_name: groupName, category, name, sort_order: sortOrder })
+      .select();
+    if (data) items.push(...(data as Item[]));
+    render();
+  }
+
+  // --- Rendering ---
+
+  function render() {
+    renderChecklist();
+    renderSummary();
+    if (activeView === 'swipe') renderSwipeMode();
+  }
+
+  function escapeHtml(s: string) {
+    const div = document.createElement('div');
+    div.textContent = s;
+    return div.innerHTML;
+  }
+
+  // Assignments made before the pixel-art avatars shipped stored an emoji
+  // character directly; new ones store an image path. Render either.
+  function appendAvatar(container: HTMLElement, avatar: string, className: string) {
+    if (avatar.startsWith('/')) {
+      const img = document.createElement('img');
+      img.src = avatar;
+      img.alt = '';
+      img.className = className;
+      container.appendChild(img);
+    } else {
+      container.appendChild(document.createTextNode(avatar));
+    }
+  }
+
+  function renderFilterBar(groupNames: string[]) {
+    filterBarEl.innerHTML = '';
+    const allBtn = document.createElement('button');
+    allBtn.type = 'button';
+    allBtn.textContent = 'All';
+    allBtn.className = 'camp-filter' + (activeFilter === null ? ' camp-filter--active' : '');
+    allBtn.addEventListener('click', () => {
+      activeFilter = null;
+      render();
+    });
+    filterBarEl.appendChild(allBtn);
+
+    for (const groupName of groupNames) {
+      const icon = GROUP_ICONS[groupName] ?? '🏕️';
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = `${icon} ${groupName}`;
+      btn.className = 'camp-filter' + (activeFilter === groupName ? ' camp-filter--active' : '');
+      btn.addEventListener('click', () => {
+        activeFilter = activeFilter === groupName ? null : groupName;
+        if (activeFilter) collapsedGroups.delete(activeFilter);
+        render();
+      });
+      filterBarEl.appendChild(btn);
+    }
+  }
+
+  function renderChecklist() {
+    groupsEl.innerHTML = '';
+    const allGroupNames = Array.from(new Set(items.map((i) => i.group_name))).sort(
+      (a, b) => GROUP_ORDER.indexOf(a) - GROUP_ORDER.indexOf(b)
+    );
+    renderFilterBar(allGroupNames);
+    const groupNames = activeFilter ? allGroupNames.filter((g) => g === activeFilter) : allGroupNames;
+    const query = searchQuery.trim().toLowerCase();
+
+    for (const groupName of groupNames) {
+      const groupId = `group-${slugify(groupName)}`;
+      const icon = GROUP_ICONS[groupName] ?? '🏕️';
+      const groupItems = items.filter((i) => i.group_name === groupName);
+      const categories = Array.from(new Set(groupItems.map((i) => i.category)));
+
+      const visibleCategories = categories
+        .map((category) => ({
+          category,
+          categoryItems: groupItems.filter(
+            (i) => i.category === category && (!query || i.name.toLowerCase().includes(query))
+          ),
+        }))
+        .filter((c) => !query || c.categoryItems.length > 0);
+
+      if (query && visibleCategories.length === 0) continue;
+
+      if (groupsEl.children.length > 0) groupsEl.appendChild(document.createElement('hr')).className = 'camp-trail';
+
+      const groupSection = document.createElement('details');
+      groupSection.className = 'camp-group';
+      groupSection.id = groupId;
+      groupSection.open = !collapsedGroups.has(groupName) || Boolean(query);
+      groupSection.addEventListener('toggle', () => {
+        if (groupSection.open) collapsedGroups.delete(groupName);
+        else collapsedGroups.add(groupName);
+      });
+
+      const heading = document.createElement('summary');
+      heading.className = 'camp-group__badge';
+      heading.innerHTML = `<span class="camp-chevron">▸</span><span class="camp-group__icon">${icon}</span> ${escapeHtml(groupName)}`;
+      groupSection.appendChild(heading);
+
+      for (const { category, categoryItems } of visibleCategories) {
+        if (category !== groupName) {
+          const catHeading = document.createElement('h3');
+          catHeading.className = 'camp-category';
+          catHeading.textContent = `${CATEGORY_ICONS[category] ?? ''} ${category}`.trim();
+          groupSection.appendChild(catHeading);
+        }
+        const list = document.createElement('ul');
+        list.className = 'space-y-0';
+        for (const item of categoryItems) {
+          list.appendChild(renderItemRow(item));
+        }
+        list.appendChild(renderAddRow(groupName, category));
+        groupSection.appendChild(list);
+      }
+      groupsEl.appendChild(groupSection);
+    }
+
+    if (query && groupsEl.children.length === 0) {
+      const empty = document.createElement('p');
+      empty.className = 'camp-search-empty';
+      empty.textContent = `🔍 No items match "${searchQuery.trim()}".`;
+      groupsEl.appendChild(empty);
+    }
+  }
+
+  function renderAddRow(groupName: string, category: string): HTMLLIElement {
+    const li = document.createElement('li');
+    li.className = 'camp-item camp-item--add';
+    const form = document.createElement('form');
+    form.className = 'camp-add-inline';
+    const input = document.createElement('input');
+    input.placeholder = '+ Add an item…';
+    input.className = 'camp-input camp-input--sm';
+    const btn = document.createElement('button');
+    btn.type = 'submit';
+    btn.textContent = 'Add';
+    btn.className = 'camp-btn camp-btn--mustard camp-btn--sm';
+    form.append(input, btn);
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = input.value.trim();
+      addItem(groupName, category, name);
+    });
+    li.appendChild(form);
+    return li;
+  }
+
+  function renderItemRow(item: Item): HTMLLIElement {
+    const li = document.createElement('li');
+    li.className = 'camp-item';
+
+    const left = document.createElement('div');
+    left.className = 'camp-item__left';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'camp-item__checkbox';
+    checkbox.title = 'Select for bulk claim';
+    checkbox.checked = selectedItemIds.has(item.id);
+    checkbox.addEventListener('change', () => {
+      if (checkbox.checked) selectedItemIds.add(item.id);
+      else selectedItemIds.delete(item.id);
+      updateBulkBar();
+    });
+    left.appendChild(checkbox);
+
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'camp-item__name';
+    nameSpan.textContent = item.name;
+    left.appendChild(nameSpan);
+
+    const editBtn = document.createElement('button');
+    editBtn.type = 'button';
+    editBtn.textContent = '✏️';
+    editBtn.title = 'Edit item name';
+    editBtn.className = 'camp-item__edit';
+    editBtn.addEventListener('click', () => startEditingItem(item, nameSpan));
+    left.appendChild(editBtn);
+
+    const removeItemBtn = document.createElement('button');
+    removeItemBtn.type = 'button';
+    removeItemBtn.textContent = '✕';
+    removeItemBtn.title = 'Remove this item from the checklist';
+    removeItemBtn.className = 'camp-item__remove';
+    removeItemBtn.addEventListener('click', () => {
+      if (!confirm(`Remove "${item.name}"? This also clears anyone's claim on it.`)) return;
+      li.classList.add('camp-removing');
+      li.insertAdjacentHTML('beforeend', ' <span>🌧️</span>');
+      setTimeout(() => removeItem(item), 380);
+    });
+    left.appendChild(removeItemBtn);
+
+    const itemAssignments = assignments.filter((a) => a.item_id === item.id);
+    itemAssignments.forEach((a, index) => {
+      const chip = document.createElement('span');
+      chip.className = 'camp-chip';
+      chip.style.setProperty('--chip-rotate', index % 2 === 0 ? '-2deg' : '2deg');
+      if (!previousAssignmentIds.has(a.id)) chip.classList.add('camp-chip--new');
+      if (a.avatar) appendAvatar(chip, a.avatar, 'camp-chip-avatar');
+      chip.appendChild(
+        document.createTextNode(`🔥 ${a.person_name}` + (a.note ? ` — ${a.note}` : ''))
+      );
+      if (a.person_name.trim().toLowerCase() === myName.trim().toLowerCase()) {
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.textContent = '×';
+        removeBtn.addEventListener('click', () => triggerRainRemoval(chip, a.id));
+        chip.appendChild(removeBtn);
+      }
+      left.appendChild(chip);
+    });
+
+    const right = document.createElement('form');
+    right.className = 'camp-claim-form';
+    right.addEventListener('submit', (e) => {
+      e.preventDefault();
+      claimItem(item.id, noteInput.value.trim());
+      noteInput.value = '';
+    });
+    const noteInput = document.createElement('input');
+    noteInput.placeholder = 'note (optional)';
+    noteInput.className = 'camp-input camp-input--sm';
+    const claimBtn = document.createElement('button');
+    claimBtn.type = 'submit';
+    claimBtn.textContent = "🙋 I'll bring this";
+    claimBtn.className = 'camp-btn camp-btn--mustard camp-btn--sm';
+    right.appendChild(noteInput);
+    right.appendChild(claimBtn);
+
+    li.appendChild(left);
+    li.appendChild(right);
+    return li;
+  }
+
+  function renderSummary() {
+    viewSummary.innerHTML = '';
+    const byPerson = new Map<
+      string,
+      { assignmentId: string; itemName: string; note: string | null; avatar: string | null }[]
+    >();
+    for (const a of assignments) {
+      const item = items.find((i) => i.id === a.item_id);
+      if (!item) continue;
+      const list = byPerson.get(a.person_name) ?? [];
+      list.push({ assignmentId: a.id, itemName: item.name, note: a.note, avatar: a.avatar });
+      byPerson.set(a.person_name, list);
+    }
+    if (byPerson.size === 0) {
+      viewSummary.innerHTML =
+        '<p class="text-[var(--camp-forest-deep)]">🌲 Nobody has claimed anything yet.</p>';
+      return;
+    }
+    Array.from(byPerson.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .forEach(([person, claimed], index) => {
+        const section = document.createElement('div');
+        const heading = document.createElement('h3');
+        heading.className = 'camp-summary-person';
+        const avatar = claimed[0]?.avatar;
+        if (avatar) {
+          appendAvatar(heading, avatar, 'camp-avatar-icon');
+        } else {
+          heading.appendChild(document.createTextNode(FALLBACK_AVATAR_ICONS[index % FALLBACK_AVATAR_ICONS.length]));
+        }
+        heading.appendChild(document.createTextNode(person));
+        section.appendChild(heading);
+        const list = document.createElement('ul');
+        list.className = 'camp-summary-list';
+        for (const c of claimed) {
+          const li = document.createElement('li');
+          const textSpan = document.createElement('span');
+          textSpan.textContent = c.itemName + (c.note ? ` — ${c.note}` : '');
+          li.appendChild(textSpan);
+          if (person.trim().toLowerCase() === myName.trim().toLowerCase()) {
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.textContent = '✕';
+            removeBtn.title = 'Remove this claim';
+            removeBtn.className = 'camp-summary-item__remove';
+            removeBtn.addEventListener('click', () => triggerRainRemoval(li, c.assignmentId));
+            li.appendChild(removeBtn);
+          }
+          list.appendChild(li);
+        }
+        section.appendChild(list);
+        viewSummary.appendChild(section);
+      });
+  }
+
+  // --- Swipe mode ---
+  //
+  // Deck is built once per session (on first opening the tab, or on
+  // restart) from *all* items regardless of the checklist's group filter —
+  // Swipe mode is meant to blast through the whole list quickly. Skipping
+  // an item only advances the local session's swipe order; it never
+  // touches the database, so it's safe to restart as many times as you like.
+
+  function shuffle<T>(arr: T[]): T[] {
+    const copy = [...arr];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  }
+
+  function startSwipeDeck() {
+    swipeDeck = shuffle(items);
+    swipeIndex = 0;
+    swipeInitialized = true;
+    swipeBusy = false;
+    renderSwipeMode();
+  }
+
+  swipeRestartBtn.addEventListener('click', () => startSwipeDeck());
+
+  function updateSwipeProgress() {
+    const total = swipeDeck.length;
+    swipeProgress.textContent = total > 0 ? `${Math.min(swipeIndex, total)} / ${total}` : '';
+  }
+
+  function buildSwipeCard(item: Item, peek: boolean): HTMLElement {
+    const card = document.createElement('div');
+    card.className = peek ? 'camp-swipe-card camp-swipe-card--peek' : 'camp-swipe-card';
+    card.dataset.itemId = item.id;
+
+    const art = document.createElement('div');
+    art.className = 'camp-swipe-card__art';
+    const icon = document.createElement('img');
+    icon.src = pickItemIconPath(item);
+    icon.alt = '';
+    icon.className = 'camp-swipe-card__icon';
+    art.appendChild(icon);
+    card.appendChild(art);
+
+    const groupLine = document.createElement('div');
+    groupLine.className = 'camp-swipe-card__group';
+    groupLine.textContent =
+      item.category !== item.group_name ? `${item.group_name} · ${item.category}` : item.group_name;
+    card.appendChild(groupLine);
+
+    const name = document.createElement('div');
+    name.className = 'camp-swipe-card__name';
+    name.textContent = item.name;
+    card.appendChild(name);
+
+    const claimants = document.createElement('div');
+    claimants.className = 'camp-swipe-card__claimants';
+    const itemAssignments = assignments.filter((a) => a.item_id === item.id);
+    if (itemAssignments.length === 0) {
+      const label = document.createElement('span');
+      label.className = 'camp-swipe-card__claimants-label';
+      label.textContent = 'Nobody has this yet';
+      claimants.appendChild(label);
+    } else {
+      for (const a of itemAssignments) {
+        const chip = document.createElement('span');
+        chip.className = 'camp-chip';
+        if (a.avatar) appendAvatar(chip, a.avatar, 'camp-chip-avatar');
+        chip.appendChild(document.createTextNode(a.person_name));
+        claimants.appendChild(chip);
+      }
+    }
+    card.appendChild(claimants);
+
+    const stampYes = document.createElement('div');
+    stampYes.className = 'camp-swipe-card__stamp camp-swipe-card__stamp--yes';
+    stampYes.textContent = "I'LL BRING IT";
+    card.appendChild(stampYes);
+
+    const stampNope = document.createElement('div');
+    stampNope.className = 'camp-swipe-card__stamp camp-swipe-card__stamp--nope';
+    stampNope.textContent = 'NOPE';
+    card.appendChild(stampNope);
+
+    if (!peek) attachDragHandlers(card, item, stampYes, stampNope);
+
+    return card;
+  }
+
+  function attachDragHandlers(
+    card: HTMLElement,
+    item: Item,
+    stampYes: HTMLElement,
+    stampNope: HTMLElement
+  ) {
+    const threshold = 90;
+    let dragging = false;
+    let startX = 0;
+    let startY = 0;
+    let dx = 0;
+    let dy = 0;
+
+    function setStamps(currentDx: number) {
+      stampYes.style.opacity = currentDx > 0 ? String(Math.min(currentDx / threshold, 1)) : '0';
+      stampNope.style.opacity = currentDx < 0 ? String(Math.min(-currentDx / threshold, 1)) : '0';
+    }
+
+    card.addEventListener('pointerdown', (e: PointerEvent) => {
+      if (swipeBusy) return;
+      dragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      card.setPointerCapture(e.pointerId);
+      card.style.transition = 'none';
+    });
+
+    card.addEventListener('pointermove', (e: PointerEvent) => {
+      if (!dragging) return;
+      dx = e.clientX - startX;
+      dy = e.clientY - startY;
+      card.style.transform = `translate(${dx}px, ${dy}px) rotate(${dx / 18}deg)`;
+      setStamps(dx);
+    });
+
+    function onRelease() {
+      if (!dragging) return;
+      dragging = false;
+      card.style.transition = 'transform 250ms ease, opacity 250ms ease';
+      if (dx > threshold) {
+        commitSwipe(card, item, 'right');
+      } else if (dx < -threshold) {
+        commitSwipe(card, item, 'left');
+      } else {
+        card.style.transform = 'translate(0, 0) rotate(0deg)';
+        setStamps(0);
+      }
+      dx = 0;
+      dy = 0;
+    }
+
+    card.addEventListener('pointerup', onRelease);
+    card.addEventListener('pointercancel', onRelease);
+  }
+
+  function commitSwipe(card: HTMLElement, item: Item, direction: 'left' | 'right') {
+    if (swipeBusy) return;
+    swipeBusy = true;
+    swipeNopeBtn.disabled = true;
+    swipeYesBtn.disabled = true;
+    const flyX = direction === 'right' ? 700 : -700;
+    card.style.transition = 'transform 300ms ease, opacity 300ms ease';
+    card.style.transform = `translate(${flyX}px, -30px) rotate(${direction === 'right' ? 22 : -22}deg)`;
+    card.style.opacity = '0';
+    card.style.pointerEvents = 'none';
+    setTimeout(async () => {
+      swipeIndex += 1;
+      swipeBusy = false;
+      swipeNopeBtn.disabled = false;
+      swipeYesBtn.disabled = false;
+      if (direction === 'right') {
+        await claimItem(item.id, ''); // claimItem() re-renders via refreshAssignments()
+      } else {
+        renderSwipeMode();
+      }
+    }, 300);
+  }
+
+  swipeNopeBtn.addEventListener('click', () => {
+    if (swipeBusy) return;
+    const card = swipeStack.querySelector<HTMLElement>('.camp-swipe-card:not(.camp-swipe-card--peek)');
+    const item = swipeDeck[swipeIndex];
+    if (!card || !item) return;
+    card.style.transition = 'transform 250ms ease, opacity 250ms ease';
+    commitSwipe(card, item, 'left');
+  });
+
+  swipeYesBtn.addEventListener('click', () => {
+    if (swipeBusy) return;
+    const card = swipeStack.querySelector<HTMLElement>('.camp-swipe-card:not(.camp-swipe-card--peek)');
+    const item = swipeDeck[swipeIndex];
+    if (!card || !item) return;
+    card.style.transition = 'transform 250ms ease, opacity 250ms ease';
+    commitSwipe(card, item, 'right');
+  });
+
+  function renderSwipeMode() {
+    if (!swipeInitialized) return;
+
+    // Skip past any item that got deleted elsewhere mid-session.
+    while (swipeIndex < swipeDeck.length && !items.find((i) => i.id === swipeDeck[swipeIndex].id)) {
+      swipeIndex += 1;
+    }
+
+    updateSwipeProgress();
+    swipeStack.innerHTML = '';
+
+    if (swipeDeck.length === 0) {
+      swipeActions.classList.add('hidden');
+      swipeEnd.classList.remove('hidden');
+      swipeEnd.querySelector('.camp-swipe-end__title')!.textContent = '🏕️ Nothing to swipe yet!';
+      swipeEnd.querySelector('.camp-swipe-end__subtitle')!.textContent = 'Add some items to the checklist first.';
+      swipeRestartBtn.classList.add('hidden');
+      return;
+    }
+
+    if (swipeIndex >= swipeDeck.length) {
+      swipeActions.classList.add('hidden');
+      swipeEnd.classList.remove('hidden');
+      swipeEnd.querySelector('.camp-swipe-end__title')!.textContent = "🎉 That's the whole deck!";
+      swipeEnd.querySelector('.camp-swipe-end__subtitle')!.textContent = 'Want to play again?';
+      swipeRestartBtn.classList.remove('hidden');
+      return;
+    }
+
+    swipeEnd.classList.add('hidden');
+    swipeActions.classList.remove('hidden');
+
+    const next = swipeDeck[swipeIndex + 1];
+    if (next) swipeStack.appendChild(buildSwipeCard(next, true));
+    swipeStack.appendChild(buildSwipeCard(swipeDeck[swipeIndex], false));
+  }
+
+  function showDogToast() {
+    const toast = document.createElement('div');
+    toast.className = 'camp-swipe-toast';
+    const img = document.createElement('img');
+    img.src = ITEM_ICON_PATHS.dog;
+    img.alt = '';
+    toast.appendChild(img);
+    const msg = document.createElement('p');
+    msg.textContent = 'Wow, so creative! 🐶 (added to the checklist for real)';
+    toast.appendChild(msg);
+    swipeStack.appendChild(toast);
+    setTimeout(() => toast.remove(), 1800);
+  }
+
+  swipeAddBtn.addEventListener('click', () => {
+    swipeAddForm.classList.toggle('hidden');
+    if (!swipeAddForm.classList.contains('hidden')) swipeAddInput.focus();
+  });
+
+  swipeAddForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = swipeAddInput.value.trim();
+    if (!name) return;
+    swipeAddInput.value = '';
+    swipeAddForm.classList.add('hidden');
+    await addItem('Misc.', 'Misc.', name);
+    showDogToast();
+  });
+
+  // Auto-enter if a passcode is already stored from a previous visit.
+  const stored = getStoredPasscode();
+  if (stored) {
+    tryEnter(stored).then((ok) => {
+      if (!ok) clearStoredPasscode();
+    });
+  }
+</script>

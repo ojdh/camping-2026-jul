@@ -1,0 +1,133 @@
+---
+import '@fontsource-variable/fredoka';
+import '../styles/base.css';
+import TripChecklist from '../components/TripChecklist.astro';
+
+const pageTitle = 'Camping 2026-Jul';
+const description = "Who's bringing what for the Jubilee Park camping trip, July 24-26 2026.";
+const mapsUrl = 'https://maps.app.goo.gl/CbgkU5VWe434xh3e6?g_st=ic';
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏕️</text></svg>" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+  </head>
+  <body>
+    <section class="camp-theme">
+      <div class="camp-page">
+        <div class="camp-badge" aria-hidden="true">🏕️</div>
+        <h1 class="camp-title">{pageTitle}</h1>
+        <p class="camp-tagline">Claim what you're bringing, or see who's got what covered.</p>
+
+        <div class="camp-trip-info">
+          <a
+            class="camp-info-badge"
+            href={mapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            📍 Jubilee Park Campground, Wizard Lake, Edmonton AB
+          </a>
+          <span class="camp-info-badge">📅 July 24–26, 2026</span>
+        </div>
+
+        <div class="camp-app-wrap">
+          <TripChecklist />
+        </div>
+      </div>
+    </section>
+  </body>
+</html>
+
+<style>
+  .camp-theme {
+    --camp-forest: #2f5233;
+    --camp-forest-deep: #1e3a22;
+    --camp-cream: #fbf1de;
+    --camp-card: #fffaf0;
+    --camp-mustard: #e0a83c;
+    --camp-mustard-deep: #b8822a;
+    --camp-rust: #c1502e;
+    --camp-rust-deep: #8f3a20;
+    --camp-ink: #2b2117;
+    --font-display: 'Fredoka Variable', ui-rounded, sans-serif;
+
+    background: var(--camp-cream);
+    min-height: 100vh;
+    font-family: system-ui, sans-serif;
+  }
+
+  .camp-page {
+    max-width: 48rem;
+    margin-inline: auto;
+    padding: 4rem 1.5rem;
+  }
+
+  .camp-badge {
+    width: 5.5rem;
+    height: 5.5rem;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.75rem;
+    background: var(--camp-mustard);
+    border: 3px dashed var(--camp-forest);
+    border-radius: 9999px;
+    box-shadow: 4px 4px 0 var(--camp-forest);
+  }
+
+  .camp-title {
+    margin-top: 1.25rem;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 2.75rem;
+    text-align: center;
+    letter-spacing: 0.02em;
+    color: var(--camp-forest);
+    transform: rotate(-1.5deg);
+  }
+
+  .camp-tagline {
+    margin-top: 0.75rem;
+    max-width: 32rem;
+    margin-inline: auto;
+    text-align: center;
+    color: var(--camp-forest-deep);
+    opacity: 0.75;
+  }
+
+  .camp-trip-info {
+    margin-top: 1.25rem;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+  .camp-info-badge {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--camp-forest);
+    background: var(--camp-card);
+    border: 2px solid var(--camp-forest);
+    border-radius: 9999px;
+    padding: 0.4rem 0.9rem;
+  }
+  a.camp-info-badge {
+    transition: transform 120ms ease;
+  }
+  a.camp-info-badge:hover {
+    transform: translateY(-2px);
+    background: var(--camp-mustard);
+  }
+
+  .camp-app-wrap {
+    margin-top: 2.5rem;
+  }
+</style>
